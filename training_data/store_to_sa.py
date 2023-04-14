@@ -26,12 +26,12 @@ def main():
     if name is None:
         name = os.path.splitext(os.path.basename(filepath))[0]
         if prefix is not None:
-            name = prefix + '_' + name
+            name = f'{prefix}_{name}'
 
     sa_array = sa.create(name, data.shape, data.dtype)
     np.copyto(sa_array, data)
 
-    print("Successfully saved: {}, {}, {}".format(name, data.shape, data.dtype))
+    print(f"Successfully saved: {name}, {data.shape}, {data.dtype}")
 
 if __name__ == '__main__':
     main()

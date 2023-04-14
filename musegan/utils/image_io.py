@@ -77,12 +77,11 @@ def save_image(filepath, phrases, shape, inverted=True, grid_width=3,
     reshaped = transposed.reshape(-1, phrases.shape[1] * phrases.shape[4],
                                   phrases.shape[3], phrases.shape[2])
 
-    merged_phrases = []
     phrase_shape = (phrases.shape[4], phrases.shape[1])
-    for phrase in reshaped:
-        merged_phrases.append(get_image_grid(phrase, phrase_shape, 1,
-                                             grid_color))
-
+    merged_phrases = [
+        get_image_grid(phrase, phrase_shape, 1, grid_color)
+        for phrase in reshaped
+    ]
     merged = get_image_grid(np.stack(merged_phrases), shape, grid_width,
                             grid_color, frame)
     imageio.imwrite(filepath, merged)

@@ -84,7 +84,7 @@ class GAN(object):
 
         for epoch in range(self.config.epoch):
 
-            print ('{:-^120}'.format(' Epoch {} Start '.format(epoch)))
+            print('{:-^120}'.format(f' Epoch {epoch} Start '))
             epoch_start_time = time.time()
 
             for batch_idx in range(num_batch):
@@ -96,7 +96,7 @@ class GAN(object):
                 # update D
                 num_iters_D = 100 if counter < 25 or counter % 500 == 0 else 5
 
-                for j in range(num_iters_D):
+                for _ in range(num_iters_D):
                     self.sess.run(self.model.d_optim, feed_dict=feed_dict_batch)
 
                 # update G
@@ -109,9 +109,15 @@ class GAN(object):
 
                 # print and save batch info
                 if self.config.print_batch:
-                    print( '---{}--- epoch: {:2d} | batch: {:4d}/{:4d} | time: {:6.2f} '\
-                        .format(self.config.exp_name+'_GPU_'+self.config.gpu_num, epoch,
-                        batch_idx , num_batch, time.time() - batch_start_time))
+                    print(
+                        '---{}--- epoch: {:2d} | batch: {:4d}/{:4d} | time: {:6.2f} '.format(
+                            f'{self.config.exp_name}_GPU_{self.config.gpu_num}',
+                            epoch,
+                            batch_idx,
+                            num_batch,
+                            time.time() - batch_start_time,
+                        )
+                    )
 
                     print ('D loss: %6.2f, G loss: %6.2f' % (d_loss_eval, g_loss_eval))
 
@@ -179,7 +185,11 @@ class GAN(object):
             print('*saving files...')
 
             sample_shape = get_sample_shape(sample_size)
-            imsave(samples, size=sample_shape, path=os.path.join(save_dir, prefix+'.png'))
+            imsave(
+                samples,
+                size=sample_shape,
+                path=os.path.join(save_dir, f'{prefix}.png'),
+            )
 
         return samples
 
@@ -187,7 +197,7 @@ class GAN(object):
         '''
             type_ = 'npy', 'data', 'all'
         '''
-        batch_size = self.config.batch_size if not batch_size else batch_size
+        batch_size = batch_size if batch_size else self.config.batch_size
 
         gen_dir = os.path.join(self.config.exp_name, 'gen') if gen_dir is None else gen_dir
 
@@ -297,7 +307,7 @@ class MuseGAN(object):
 
         for epoch in range(self.config.epoch):
 
-            print ('{:-^120}'.format(' Epoch {} Start '.format(epoch)))
+            print('{:-^120}'.format(f' Epoch {epoch} Start '))
             epoch_start_time = time.time()
 
             for batch_idx in range(num_batch):
@@ -309,7 +319,7 @@ class MuseGAN(object):
                 # update D
                 num_iters_D = 100 if counter < 25 or counter % 500 == 0 else 5
 
-                for j in range(num_iters_D):
+                for _ in range(num_iters_D):
                     self.sess.run(self.model.d_optim, feed_dict=feed_dict_batch)
 
                 # update G
@@ -331,9 +341,15 @@ class MuseGAN(object):
 
                 # print and save batch info
                 if self.config.print_batch:
-                    print( '---{}--- epoch: {:2d} | batch: {:4d}/{:4d} | time: {:6.2f} '\
-                        .format(self.config.exp_name+'_GPU_'+self.config.gpu_num, epoch,
-                        batch_idx , num_batch, time.time() - batch_start_time))
+                    print(
+                        '---{}--- epoch: {:2d} | batch: {:4d}/{:4d} | time: {:6.2f} '.format(
+                            f'{self.config.exp_name}_GPU_{self.config.gpu_num}',
+                            epoch,
+                            batch_idx,
+                            num_batch,
+                            time.time() - batch_start_time,
+                        )
+                    )
 
                     print ('D loss: %6.2f, G loss: %6.2f' % (d_loss_eval, g_loss_eval))
 
@@ -357,10 +373,10 @@ class MuseGAN(object):
 
     def save(self, checkpoint_dir, component='all', global_step=None):
 
-        if component == 'all':
-            saver_names = ['midinet', 'G', 'D', 'invG']
-        elif component == 'GD':
+        if component == 'GD':
             saver_names = ['midinet', 'G', 'D']
+        elif component == 'all':
+            saver_names = ['midinet', 'G', 'D', 'invG']
         elif component == 'invG':
             saver_names = ['midinet', 'invG']
 
@@ -370,10 +386,10 @@ class MuseGAN(object):
         print('*saving checkpoints...')
         # for saver_name, saver in self.saver_dict.iteritems():
         for saver_name in self.saver_dict.keys():
-            saver = self.saver_dict[saver_name]
             if saver_name in saver_names:
                 if not os.path.exists(os.path.join(checkpoint_dir, saver_name)):
                     os.makedirs(os.path.join(checkpoint_dir, saver_name))
+                saver = self.saver_dict[saver_name]
                 saver.save(self.sess, os.path.join(checkpoint_dir, saver_name, saver_name),
                            global_step=global_step)
 
@@ -407,12 +423,24 @@ class MuseGAN(object):
         # save results to image files
         if save_info:
             print('*saving files...')
-            save_midis(samples_binary, file_path=os.path.join(save_dir, prefix+'.mid'))
+            save_midis(samples_binary, file_path=os.path.join(save_dir, f'{prefix}.mid'))
 
             sample_shape = get_sample_shape(sample_size)
             save_bars(samples, size=sample_shape, file_path=save_dir, name=prefix,type_=type_)
-            save_bars(samples_binary, size=sample_shape, file_path=save_dir, name=prefix+'_binary', type_=type_)
-            save_bars(samples_chroma, size=sample_shape, file_path=save_dir, name=prefix+'_chroma', type_=type_)
+            save_bars(
+                samples_binary,
+                size=sample_shape,
+                file_path=save_dir,
+                name=f'{prefix}_binary',
+                type_=type_,
+            )
+            save_bars(
+                samples_chroma,
+                size=sample_shape,
+                file_path=save_dir,
+                name=f'{prefix}_chroma',
+                type_=type_,
+            )
 
         return samples, samples_binary, samples_chroma
 
@@ -420,7 +448,7 @@ class MuseGAN(object):
         '''
             type_ = 'npy', 'data', 'all'
         '''
-        batch_size = self.config.batch_size if not batch_size else batch_size
+        batch_size = batch_size if batch_size else self.config.batch_size
 
         gen_dir = os.path.join(self.config.exp_name, 'gen') if gen_dir is None else gen_dir
 

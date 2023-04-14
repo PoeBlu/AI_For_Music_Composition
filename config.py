@@ -17,6 +17,7 @@ values defined in the dictionary `SETUP`, so remember to provide the experiment
 name manually if you have changed the configuration so that you won't overwrite
 existing experiment directories.
 """
+
 import os
 import shutil
 import distutils.dir_util
@@ -106,13 +107,11 @@ SETUP = {
     # setup `CONFIG['model']['net_r']` to define the network architecture.
 }
 
-CONFIG = {}
-
 #===============================================================================
 #=========================== TensorFlow Configuration ==========================
 #===============================================================================
 os.environ['CUDA_VISIBLE_DEVICES'] = SETUP['gpu']
-CONFIG['tensorflow'] = tf.ConfigProto()
+CONFIG = {'tensorflow': tf.ConfigProto()}
 CONFIG['tensorflow'].gpu_options.allow_growth = True
 
 #===============================================================================
@@ -130,15 +129,13 @@ for key in ('model', 'pretrained_dir'):
     if CONFIG['exp'][key] is None:
         CONFIG['exp'][key] = SETUP[key]
 
-if SETUP['model'] == 'musegan':
-    # Set default experiment name
-    if CONFIG['exp']['exp_name'] is None:
-        if SETUP['exp_name'] is not None:
-            CONFIG['exp']['exp_name'] = SETUP['exp_name']
-        else:
-            CONFIG['exp']['exp_name'] = '_'.join(
-                (SETUP['prefix'], 'g', SETUP['preset_g'], 'd',
-                 SETUP['preset_d']))
+if SETUP['model'] == 'musegan' and CONFIG['exp']['exp_name'] is None:
+    if SETUP['exp_name'] is not None:
+        CONFIG['exp']['exp_name'] = SETUP['exp_name']
+    else:
+        CONFIG['exp']['exp_name'] = '_'.join(
+            (SETUP['prefix'], 'g', SETUP['preset_g'], 'd',
+             SETUP['preset_d']))
 
 if SETUP['model'] == 'bmusegan':
     if CONFIG['exp']['two_stage_training'] is None:
@@ -166,17 +163,16 @@ if SETUP['model'] == 'bmusegan':
                     (SETUP['prefix'], SETUP['training_phase'], 'g',
                      SETUP['preset_g'], 'd', SETUP['preset_d'], 'r',
                      SETUP['preset_r']))
-    # Set default first stage model directory
     if CONFIG['exp']['first_stage_dir'] is None:
-        if SETUP['first_stage_dir'] is not None:
-            CONFIG['exp']['first_stage_dir'] = SETUP['first_stage_dir']
-        else:
+        if SETUP['first_stage_dir'] is None:
             CONFIG['exp']['first_stage_dir'] = os.path.join(
                 os.path.dirname(os.path.realpath(__file__)), 'exp',
                 '_'.join((SETUP['prefix'], 'first_stage', 'g',
                           SETUP['preset_g'], 'd', SETUP['preset_d'])),
                 'checkpoints')
 
+        else:
+            CONFIG['exp']['first_stage_dir'] = SETUP['first_stage_dir']
 #===============================================================================
 #============================= Data Configuration ==============================
 #===============================================================================
@@ -326,11 +322,10 @@ for path in (CONFIG['model']['checkpoint_dir'], CONFIG['model']['sample_dir'],
 
 # Backup source code
 for path in os.listdir(os.path.dirname(os.path.realpath(__file__))):
-    if os.path.isfile(path):
-        if path.endswith('.py'):
-            shutil.copyfile(os.path.basename(path),
-                            os.path.join(CONFIG['model']['src_dir'],
-                                         os.path.basename(path)))
+    if os.path.isfile(path) and path.endswith('.py'):
+        shutil.copyfile(os.path.basename(path),
+                        os.path.join(CONFIG['model']['src_dir'],
+                                     os.path.basename(path)))
 
 distutils.dir_util.copy_tree(
     os.path.join(os.path.dirname(os.path.realpath(__file__)), 'musegan'),

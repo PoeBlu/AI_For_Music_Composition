@@ -9,8 +9,8 @@ class InputData:
     def __init__(self, model, batch_size=64):
         self.model = model # to get endpoint
         self.batch_size = batch_size
-        self.z = dict()
-        self.x = dict()
+        self.z = {}
+        self.x = {}
 
     def add_data(self, path_new, key='train'):
         self.x[key] = np.load(path_new)
@@ -55,7 +55,7 @@ class InputDataMNIST(InputData):
     def __init__(self, model, batch_size=64):
         self.model = model # to get endpoint
         self.batch_size = batch_size
-        self.x = dict()
+        self.x = {}
 
         mnist = input_data.read_data_sets(self.dataset_dir, one_hot = True)
         self.add_data_np(mnist.train.images.reshape((-1,28,28,1)), 'train')
@@ -66,9 +66,7 @@ class InputDataMNIST(InputData):
         z = np.random.uniform(-1., 1., size=(self.batch_size, self.model.z_dim)).astype(np.float32)
         x = self.get_batch(idx, data_size, key)
 
-        feed_dict = {self.model.z: z, self.model.x: x}
-
-        return feed_dict
+        return {self.model.z: z, self.model.x: x}
 
 #######################################################################################################################
 # Music
@@ -81,11 +79,16 @@ class InputDataNowBarHybrid(InputData):
         if z is not None:
             self.z = z
         else:
-            self.z = dict()
-            self.z['inter']=  np.random.normal(0, 0.1, [batch_size, self.model.z_inter_dim]).astype(np.float32)
+            self.z = {
+                'inter': np.random.normal(
+                    0, 0.1, [batch_size, self.model.z_inter_dim]
+                ).astype(np.float32)
+            }
             self.z['intra'] = np.random.normal(0, 0.1, [batch_size, self.model.z_intra_dim, self.model.track_dim]).astype(np.float32)
-        z_dict = {self.model.z_intra: self.z['intra'], self.model.z_inter:self.z['inter']}
-        return z_dict
+        return {
+            self.model.z_intra: self.z['intra'],
+            self.model.z_inter: self.z['inter'],
+        }
 
 class InputDataNowBarJamming(InputData):
     def gen_z_dict(self, data_size=None, z=None):
@@ -93,10 +96,14 @@ class InputDataNowBarJamming(InputData):
         if z is not None:
             self.z = z
         else:
-            self.z = dict()
-            self.z['intra'] = np.random.normal(0, 0.1, [batch_size, self.model.z_intra_dim, self.model.track_dim]).astype(np.float32)
-        z_dict = {self.model.z_intra: self.z['intra']}
-        return z_dict
+            self.z = {
+                'intra': np.random.normal(
+                    0,
+                    0.1,
+                    [batch_size, self.model.z_intra_dim, self.model.track_dim],
+                ).astype(np.float32)
+            }
+        return {self.model.z_intra: self.z['intra']}
 
 class InputDataNowBarComposer(InputData):
     def gen_z_dict(self, data_size=None, z=None):
@@ -104,11 +111,12 @@ class InputDataNowBarComposer(InputData):
         if z is not None:
             self.z = z
         else:
-            self.z = dict()
-            self.z['inter'] = np.random.normal(0, 0.1, [batch_size, self.model.z_inter_dim]).astype(np.float32)
-        z_dict = {self.model.z_inter: self.z['inter']}
-
-        return z_dict
+            self.z = {
+                'inter': np.random.normal(
+                    0, 0.1, [batch_size, self.model.z_inter_dim]
+                ).astype(np.float32)
+            }
+        return {self.model.z_inter: self.z['inter']}
 
 # temporal
 class InputDataTemporalHybrid(InputData):
@@ -117,16 +125,23 @@ class InputDataTemporalHybrid(InputData):
         if z is not None:
             self.z = z
         else:
-            self.z = dict()
-            self.z['z_intra_v'] = np.random.normal(0, 0.1, [batch_size, self.model.z_intra_dim, self.model.track_dim]).astype(np.float32)
+            self.z = {
+                'z_intra_v': np.random.normal(
+                    0,
+                    0.1,
+                    [batch_size, self.model.z_intra_dim, self.model.track_dim],
+                ).astype(np.float32)
+            }
             self.z['z_intra_i'] = np.random.normal(0, 0.1, [batch_size, self.model.z_intra_dim, self.model.track_dim]).astype(np.float32)
             self.z['z_inter_v'] = np.random.normal(0, 0.1, [batch_size, self.model.z_inter_dim]).astype(np.float32)
             self.z['z_inter_i'] = np.random.normal(0, 0.1, [batch_size, self.model.z_inter_dim]).astype(np.float32)
 
-        feed_dict = {self.model.z_intra_v:  self.z['z_intra_v'], self.model.z_intra_i: self.z['z_intra_i'],
-                    self.model.z_inter_v: self.z['z_inter_v'], self.model.z_inter_i: self.z['z_inter_i']}
-
-        return feed_dict
+        return {
+            self.model.z_intra_v: self.z['z_intra_v'],
+            self.model.z_intra_i: self.z['z_intra_i'],
+            self.model.z_inter_v: self.z['z_inter_v'],
+            self.model.z_inter_i: self.z['z_inter_i'],
+        }
 
 class InputDataTemporalJamming(InputData):
     def gen_z_dict(self, data_size=None, z=None):
@@ -134,13 +149,19 @@ class InputDataTemporalJamming(InputData):
         if z is not None:
             self.z = z
         else:
-            self.z = dict()
-            self.z['z_intra_v'] = np.random.normal(0, 0.1, [batch_size, self.model.z_intra_dim, self.model.track_dim]).astype(np.float32)
+            self.z = {
+                'z_intra_v': np.random.normal(
+                    0,
+                    0.1,
+                    [batch_size, self.model.z_intra_dim, self.model.track_dim],
+                ).astype(np.float32)
+            }
             self.z['z_intra_i'] = np.random.normal(0, 0.1, [batch_size, self.model.z_intra_dim, self.model.track_dim]).astype(np.float32)
 
-        feed_dict = {self.model.z_intra_v: self.z['z_intra_v'], self.model.z_intra_i: self.z['z_intra_i']}
-
-        return feed_dict
+        return {
+            self.model.z_intra_v: self.z['z_intra_v'],
+            self.model.z_intra_i: self.z['z_intra_i'],
+        }
 
 class InputDataTemporalComposer(InputData):
     def gen_z_dict(self, idx=0, data_size=None, z=None):
@@ -148,12 +169,16 @@ class InputDataTemporalComposer(InputData):
         if z is not None:
             self.z = z
         else:
-            self.z = dict()
-            self.z['z_inter_v'] = np.random.normal(0, 0.1, [batch_size, self.model.z_inter_dim]).astype(np.float32)
+            self.z = {
+                'z_inter_v': np.random.normal(
+                    0, 0.1, [batch_size, self.model.z_inter_dim]
+                ).astype(np.float32)
+            }
             self.z['z_inter_i'] = np.random.normal(0, 0.1, [batch_size, self.model.z_inter_dim]).astype(np.float32)
-        feed_dict = {self.model.z_inter_v: self.z['z_inter_v'], self.model.z_inter_i: self.z['z_inter_i']}
-
-        return feed_dict
+        return {
+            self.model.z_inter_v: self.z['z_inter_v'],
+            self.model.z_inter_i: self.z['z_inter_i'],
+        }
 
 class InputDataRNNComposer(InputData):
     def gen_feed_dict(self, idx=0, data_size=None, z=None):
@@ -161,10 +186,13 @@ class InputDataRNNComposer(InputData):
         if z is not None:
             self.z = z
         else:
-            self.z = dict()
-            self.z['z_inter'] = np.random.normal(0, 0.1, [batch_size, self.model.output_bar, self.model.z_inter_dim]).astype(np.float32)
-        feed_dict = {self.model.z_inter: self.z['z_inter']}
-
-        return feed_dict
+            self.z = {
+                'z_inter': np.random.normal(
+                    0,
+                    0.1,
+                    [batch_size, self.model.output_bar, self.model.z_inter_dim],
+                ).astype(np.float32)
+            }
+        return {self.model.z_inter: self.z['z_inter']}
 
 

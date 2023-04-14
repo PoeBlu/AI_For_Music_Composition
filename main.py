@@ -39,7 +39,7 @@ def main():
     if CONFIG['exp']['model'] not in ('musegan', 'bmusegan'):
         raise ValueError("Unrecognizable model name")
 
-    print("Start experiment: {}".format(CONFIG['exp']['exp_name']))
+    print(f"Start experiment: {CONFIG['exp']['exp_name']}")
 
     # Load training data
     x_train = load_data()

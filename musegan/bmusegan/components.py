@@ -24,25 +24,35 @@ class Generator(Component):
                                    name='shared')
 
         nets['pitch_time_private'] = [
-            NeuralNet(nets['shared'].tensor_out,
-                      config['net_g']['pitch_time_private'],
-                      name='pt_'+str(idx))
+            NeuralNet(
+                nets['shared'].tensor_out,
+                config['net_g']['pitch_time_private'],
+                name=f'pt_{str(idx)}',
+            )
             for idx in range(config['num_track'])
         ]
 
         nets['time_pitch_private'] = [
-            NeuralNet(nets['shared'].tensor_out,
-                      config['net_g']['time_pitch_private'],
-                      name='tp_'+str(idx))
+            NeuralNet(
+                nets['shared'].tensor_out,
+                config['net_g']['time_pitch_private'],
+                name=f'tp_{str(idx)}',
+            )
             for idx in range(config['num_track'])
         ]
 
         nets['merged_private'] = [
-            NeuralNet(tf.concat([nets['pitch_time_private'][idx].tensor_out,
-                                 nets['time_pitch_private'][idx].tensor_out],
-                                -1),
-                      config['net_g']['merged_private'],
-                      name='merged_'+str(idx))
+            NeuralNet(
+                tf.concat(
+                    [
+                        nets['pitch_time_private'][idx].tensor_out,
+                        nets['time_pitch_private'][idx].tensor_out,
+                    ],
+                    -1,
+                ),
+                config['net_g']['merged_private'],
+                name=f'merged_{str(idx)}',
+            )
             for idx in range(config['num_track'])
         ]
 
@@ -67,24 +77,31 @@ class Discriminator(Component):
 
         # main stream
         nets['pitch_time_private'] = [
-            NeuralNet(tf.expand_dims(self.tensor_in[..., idx], -1),
-                      config['net_d']['pitch_time_private'],
-                      name='pt_' + str(idx))
+            NeuralNet(
+                tf.expand_dims(self.tensor_in[..., idx], -1),
+                config['net_d']['pitch_time_private'],
+                name=f'pt_{str(idx)}',
+            )
             for idx in range(config['num_track'])
         ]
 
         nets['time_pitch_private'] = [
-            NeuralNet(tf.expand_dims(self.tensor_in[..., idx], -1),
-                      config['net_d']['time_pitch_private'],
-                      name='tp_' + str(idx))
+            NeuralNet(
+                tf.expand_dims(self.tensor_in[..., idx], -1),
+                config['net_d']['time_pitch_private'],
+                name=f'tp_{str(idx)}',
+            )
             for idx in range(config['num_track'])
         ]
 
         nets['merged_private'] = [
             NeuralNet(
-                tf.concat([x.tensor_out,
-                           nets['time_pitch_private'][idx].tensor_out], -1),
-                config['net_d']['merged_private'], name='merged_' + str(idx))
+                tf.concat(
+                    [x.tensor_out, nets['time_pitch_private'][idx].tensor_out], -1
+                ),
+                config['net_d']['merged_private'],
+                name=f'merged_{str(idx)}',
+            )
             for idx, x in enumerate(nets['pitch_time_private'])
         ]
 
@@ -144,9 +161,12 @@ class Refiner(Component):
         nets = OrderedDict()
 
         nets['private'] = [
-            NeuralNet(tf.expand_dims(self.tensor_in[..., idx], -1),
-                      config['net_r']['private'],
-                      slope_tensor=self.slope_tensor, name='private'+str(idx))
+            NeuralNet(
+                tf.expand_dims(self.tensor_in[..., idx], -1),
+                config['net_r']['private'],
+                slope_tensor=self.slope_tensor,
+                name=f'private{str(idx)}',
+            )
             for idx in range(config['num_track'])
         ]
 
@@ -173,33 +193,45 @@ class End2EndGenerator(Component):
                                    name='shared')
 
         nets['pitch_time_private'] = [
-            NeuralNet(nets['shared'].tensor_out,
-                      config['net_g']['pitch_time_private'],
-                      name='pt_'+str(idx))
+            NeuralNet(
+                nets['shared'].tensor_out,
+                config['net_g']['pitch_time_private'],
+                name=f'pt_{str(idx)}',
+            )
             for idx in range(config['num_track'])
         ]
 
         nets['time_pitch_private'] = [
-            NeuralNet(nets['shared'].tensor_out,
-                      config['net_g']['time_pitch_private'],
-                      name='tp_'+str(idx))
+            NeuralNet(
+                nets['shared'].tensor_out,
+                config['net_g']['time_pitch_private'],
+                name=f'tp_{str(idx)}',
+            )
             for idx in range(config['num_track'])
         ]
 
         nets['merged_private'] = [
-            NeuralNet(tf.concat([nets['pitch_time_private'][idx].tensor_out,
-                                 nets['time_pitch_private'][idx].tensor_out],
-                                -1),
-                      config['net_g']['merged_private'],
-                      name='merged_'+str(idx))
+            NeuralNet(
+                tf.concat(
+                    [
+                        nets['pitch_time_private'][idx].tensor_out,
+                        nets['time_pitch_private'][idx].tensor_out,
+                    ],
+                    -1,
+                ),
+                config['net_g']['merged_private'],
+                name=f'merged_{str(idx)}',
+            )
             for idx in range(config['num_track'])
         ]
 
         nets['refiner_private'] = [
-            NeuralNet(nets['merged_private'][idx].tensor_out,
-                      config['net_r']['private'],
-                      slope_tensor=self.slope_tensor,
-                      name='refiner_private'+str(idx))
+            NeuralNet(
+                nets['merged_private'][idx].tensor_out,
+                config['net_r']['private'],
+                slope_tensor=self.slope_tensor,
+                name=f'refiner_private{str(idx)}',
+            )
             for idx in range(config['num_track'])
         ]
 

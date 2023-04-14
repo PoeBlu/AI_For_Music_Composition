@@ -80,7 +80,7 @@ class Nowbar(Model):
 
                 self.all_tracks.append(tmp_track)
 
-            self.prediction = tf.concat([t for t in self.all_tracks], 3)
+            self.prediction = tf.concat(list(self.all_tracks), 3)
             # print(self.prediction.get_shape())
             self.prediction_binary = to_binary_tf(self.prediction)
             self.prediction_chroma = to_chroma_tf(self.prediction_binary)
@@ -253,7 +253,9 @@ class Temporal(Model):
 
                     self.phrase[bidx][tidx] = tmp_track
 
-            self.prediction = tf.concat([tf.concat([bar for bar in track], 3) for track in self.phrase], 1)
+            self.prediction = tf.concat(
+                [tf.concat(list(track), 3) for track in self.phrase], 1
+            )
             # print(self.prediction.get_shape())
             self.prediction_binary = to_binary_tf(self.prediction)
             self.prediction_chroma = to_chroma_tf(self.prediction_binary)

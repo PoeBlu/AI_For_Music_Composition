@@ -36,7 +36,7 @@ if __name__ == "__main__":
     if not os.path.exists(PATH_PIANO_ROLL):
         os.makedirs(PATH_PIANO_ROLL)
 
-    
+
     song_list = onlyfiles = [f.split('.')[0] for f in listdir(join(ROOT_TRACKS, 'Drum')) if isfile(join(join(ROOT_TRACKS, 'Drum'), f))]
 
     thres = 3
@@ -46,15 +46,21 @@ if __name__ == "__main__":
         msd_id = song_list[song_idx]
         sys.stdout.write('{0}/{1}\r'.format(song_idx, numOfSong))
         sys.stdout.flush()
-        
-        song_piano_rolls = []
+
         list_is_empty = []
 
-        piano_roll = reshape_to_bar(csc_to_array(np.load(join(ROOT_TRACKS,prefix[0], msd_id+'.npz'))))
-        song_piano_rolls.append(piano_roll)
-
+        piano_roll = reshape_to_bar(
+            csc_to_array(
+                np.load(join(ROOT_TRACKS, prefix[0], f'{msd_id}.npz'))
+            )
+        )
+        song_piano_rolls = [piano_roll]
         for idx in range(1,5):
-            piano_roll_tmp = reshape_to_bar(csc_to_array(np.load(join(ROOT_TRACKS,prefix[idx], msd_id+'.npz'))))
+            piano_roll_tmp = reshape_to_bar(
+                csc_to_array(
+                    np.load(join(ROOT_TRACKS, prefix[idx], f'{msd_id}.npz'))
+                )
+            )
             piano_roll += piano_roll_tmp
             song_piano_rolls.append(piano_roll_tmp)
 
@@ -72,6 +78,9 @@ if __name__ == "__main__":
                 instr_act[bar_idx, pre_idx] = not is_empty_bar(bar)
                 all_act[bar_idx] = np.sum(instr_act[bar_idx, :]) >= thres
 
-        sio.savemat(os.path.join(PATH_PIANO_ROLL, msd_id+'.mat'), {'piano_roll':piano_roll})
-        np.save(join(PATH_INSTRU_ACT, msd_id+'.npy'), instr_act)
-        np.save(join(PATH_ALL_ACT, msd_id+'.npy'), all_act)
+        sio.savemat(
+            os.path.join(PATH_PIANO_ROLL, f'{msd_id}.mat'),
+            {'piano_roll': piano_roll},
+        )
+        np.save(join(PATH_INSTRU_ACT, f'{msd_id}.npy'), instr_act)
+        np.save(join(PATH_ALL_ACT, f'{msd_id}.npy'), all_act)

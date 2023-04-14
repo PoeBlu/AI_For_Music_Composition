@@ -43,8 +43,6 @@ if __name__ == '__main__':
 
         musegan.load(musegan.dir_ckpt)
 
-        z_interpolation = dict()
-
     #################### SINGLE TRACK ###################
         # gen_dir = 'interpolation/gen/intra_4'
         # st_z_inter = np.random.normal(0, 0.1, [64]).astype(np.float32)
@@ -87,7 +85,7 @@ if __name__ == '__main__':
 
         grid_list = bilerp(inter_a0, inter_a1, intra_b0, intra_b1, 8)
 
-        z_interpolation['inter'] = np.array([t[0] for t in grid_list])
+        z_interpolation = {'inter': np.array([t[0] for t in grid_list])}
         z_interpolation['intra'] = np.array([t[1] for t in grid_list])
         # print(inter.shape, intra.shape)
 

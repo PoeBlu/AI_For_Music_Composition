@@ -31,7 +31,9 @@ def imsave(images, size, path, boarder=3, name='sample', type_=0):
     type: 0 merge, 1 split
 
     '''
-    scipy.misc.imsave(os.path.join(path, name+'.png'), merge(images, size, boarder=boarder))
+    scipy.misc.imsave(
+        os.path.join(path, f'{name}.png'), merge(images, size, boarder=boarder)
+    )
 
     if type_ is 1:
         save_dir = os.path.join(path, name)
@@ -77,10 +79,14 @@ def save_midis(bars, file_path):
     pause = np.zeros((bars.shape[0], 96, 128, bars.shape[3]))
     images_with_pause = padded_bars
     images_with_pause = images_with_pause.reshape(-1, 96, padded_bars.shape[2], padded_bars.shape[3])
-    images_with_pause_list = []
-    for ch_idx in range(padded_bars.shape[3]):
-        images_with_pause_list.append(images_with_pause[:,:,:,ch_idx].reshape(images_with_pause.shape[0],  \
-                                                        images_with_pause.shape[1], images_with_pause.shape[2]))
+    images_with_pause_list = [
+        images_with_pause[:, :, :, ch_idx].reshape(
+            images_with_pause.shape[0],
+            images_with_pause.shape[1],
+            images_with_pause.shape[2],
+        )
+        for ch_idx in range(padded_bars.shape[3])
+    ]
     write_midi.write_piano_rolls_to_midi(images_with_pause_list, program_nums=[33,0,25,49,0], is_drum=[False, True, False, False, False],  \
                                                             filename=file_path, tempo=80.0)
 
@@ -90,13 +96,11 @@ def transform(image, npx=64, resize_w=64):
 
 def make_gif(imgs_filter, gen_dir='./', stop__frame_num=10):
     img_list = glob.glob(imgs_filter)
-    images = []
-    for filename in img_list:
-        images.append(imageio.imread(filename))
+    images = [imageio.imread(filename) for filename in img_list]
     print('%d imgs'% len(img_list))
 
     stop_frame = np.zeros(images[0].shape)
-    images = images + [stop_frame] * stop__frame_num
+    images += [stop_frame] * stop__frame_num
 
     imageio.mimsave(os.path.join(gen_dir, 'movie.gif'), images, duration=0.3)
 
@@ -109,12 +113,11 @@ def to_binary_np(bar, threshold=0.0):
 
 def to_chroma_np(bar, is_normalize=True):
     chroma = bar.reshape(bar.shape[0], bar.shape[1], 12, 7, bar.shape[3]).sum(axis=3)
-    if is_normalize:
-        chroma_max = chroma.max(axis=(1, 2, 3), keepdims=True)
-        chroma_min = chroma.min(axis=(1, 2, 3), keepdims=True)
-        return np.true_divide(chroma + chroma_min, chroma_max - chroma_min + 1e-15)
-    else:
+    if not is_normalize:
         return chroma
+    chroma_max = chroma.max(axis=(1, 2, 3), keepdims=True)
+    chroma_min = chroma.min(axis=(1, 2, 3), keepdims=True)
+    return np.true_divide(chroma + chroma_min, chroma_max - chroma_min + 1e-15)
 
 
 def bilerp(a0, a1, b0, b1, steps):
@@ -123,8 +126,8 @@ def bilerp(a0, a1, b0, b1, steps):
     bt = 1 / (steps - 1)
 
     grid_list = []
-    for aidx in range(0, steps):
-        for bidx in range(0, steps):
+    for aidx in range(steps):
+        for bidx in range(steps):
             a = at * aidx
             b = bt * bidx
 
@@ -138,10 +141,7 @@ def bilerp(a0, a1, b0, b1, steps):
 def lerp(a, b, steps):
     vec = b - a
     step_vec = vec / (steps+1)
-    step_list = []
-    for idx in range(1, steps+1):
-        step_list.append(a + step_vec*idx)
-    return step_list
+    return [a + step_vec*idx for idx in range(1, steps+1)]
 
 def slerp(a, b, steps):
     aa =  np.squeeze(a/np.linalg.norm(a))

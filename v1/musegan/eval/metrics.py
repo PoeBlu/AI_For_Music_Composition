@@ -56,8 +56,7 @@ class Metrics(object):
     ### Utils ###
 
     def to_chroma(self, bar, is_normalize=True):
-        chroma = bar.reshape(bar.shape[0], 12, -1).sum(axis=2)
-        return chroma
+        return bar.reshape(bar.shape[0], 12, -1).sum(axis=2)
 
     def get_tonal_matrix(self, r1=1.0, r2=1.0, r3=0.5):
         tm = np.empty((6, 12), dtype=np.float32)
@@ -82,10 +81,7 @@ class Metrics(object):
 
         hist = hist[~np.isnan(hist)]
         u_value = np.unique(hist)
-        hist_num = len(u_value)
-        if len(u_value) > 20:
-            hist_num = 20
-
+        hist_num = min(len(u_value), 20)
         fig = plt.figure()
         plt.hist(hist, hist_num)
         plt.title(title)
@@ -102,10 +98,7 @@ class Metrics(object):
             row_str = '{:30}'.format(self.metric_names[i])
             for j in range(metrics_mat.shape[1]):
                 tmp = metrics_mat[i, j]
-                if np.isnan(tmp):
-                    row_str += '{:12}'.format('')
-                else:
-                    row_str += '{:12.5f}'.format(tmp)
+                row_str += '{:12}'.format('') if np.isnan(tmp) else '{:12.5f}'.format(tmp)
             print(row_str)
 
     def print_metrics_pair(self, pair):
@@ -265,8 +258,11 @@ class Metrics(object):
             for i in range(len(self.metric_names)):
                 for j in range(len(self.track_names)):
                     if self.eval_map[i, j]:
-                        self.plot_histogram(score_matrix[i, j], fig_dir=fig_dir,
-                                            title='['+self.metric_names[i]+']_'+self.track_names[j])
+                        self.plot_histogram(
+                            score_matrix[i, j],
+                            fig_dir=fig_dir,
+                            title=f'[{self.metric_names[i]}]_{self.track_names[j]}',
+                        )
 
             # info dict
             info = {'score_matrix_mean': score_matrix_mean,
@@ -275,7 +271,7 @@ class Metrics(object):
                     'score_pair_matrix': score_pair_matrix}
 
             np.save(os.path.join(fig_dir, 'info.npy'), info)
-            print('[*] Done!! saved in %s' %(fig_dir))
+            print(f'[*] Done!! saved in {fig_dir}')
 
         # return vlaues
         if output_type is 0: # mean vlaue, scalar

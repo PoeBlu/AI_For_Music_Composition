@@ -113,80 +113,77 @@ class GAN(Model):
         self.save_samples('x_train', x_train, save_midi=True)
         self.save_samples('x_sample', self.x_sample, save_midi=True)
 
-        # Open log files and write headers
-        log_step = open(os.path.join(self.config['log_dir'], 'step.log'), 'w')
-        log_batch = open(os.path.join(self.config['log_dir'], 'batch.log'), 'w')
-        log_epoch = open(os.path.join(self.config['log_dir'], 'epoch.log'), 'w')
-        log_step.write('# epoch, step, negative_critic_loss\n')
-        log_batch.write('# epoch, batch, time, negative_critic_loss, g_loss\n')
-        log_epoch.write('# epoch, time, negative_critic_loss, g_loss\n')
+        with open(os.path.join(self.config['log_dir'], 'step.log'), 'w') as log_step:
+            log_batch = open(os.path.join(self.config['log_dir'], 'batch.log'), 'w')
+            log_epoch = open(os.path.join(self.config['log_dir'], 'epoch.log'), 'w')
+            log_step.write('# epoch, step, negative_critic_loss\n')
+            log_batch.write('# epoch, batch, time, negative_critic_loss, g_loss\n')
+            log_epoch.write('# epoch, time, negative_critic_loss, g_loss\n')
 
-        # Initialize counter
-        counter = 0
-        num_batch = len(x_train) // self.config['batch_size']
+            # Initialize counter
+            counter = 0
+            num_batch = len(x_train) // self.config['batch_size']
 
-        # Start epoch iteration
-        print('{:=^80}'.format(' Training Start '))
-        for epoch in range(train_config['num_epoch']):
+            # Start epoch iteration
+            print('{:=^80}'.format(' Training Start '))
+            for epoch in range(train_config['num_epoch']):
 
-            print('{:-^80}'.format(' Epoch {} Start '.format(epoch)))
-            epoch_start_time = time.time()
+                print('{:-^80}'.format(f' Epoch {epoch} Start '))
+                epoch_start_time = time.time()
 
-            # Prepare batched training data
-            z_random_batch = {}
-            for key in self.z:
-                z_random_batch[key] = np.random.normal(
-                    size=([num_batch] + self.z[key].get_shape().as_list()))
-            x_random_batch = np.random.choice(
-                len(x_train), (num_batch, self.config['batch_size']), False)
+                z_random_batch = {
+                    key: np.random.normal(
+                        size=([num_batch] + self.z[key].get_shape().as_list())
+                    )
+                    for key in self.z
+                }
+                x_random_batch = np.random.choice(
+                    len(x_train), (num_batch, self.config['batch_size']), False)
 
-            # Start batch iteration
-            for batch in range(num_batch):
+                        # Start batch iteration
+                for batch in range(num_batch):
 
-                feed_dict_batch = {self.x: x_train[x_random_batch[batch]]}
-                for key in self.z:
-                    feed_dict_batch[self.z[key]] = z_random_batch[key][batch]
+                    feed_dict_batch = {self.x: x_train[x_random_batch[batch]]}
+                    for key in self.z:
+                        feed_dict_batch[self.z[key]] = z_random_batch[key][batch]
 
-                if (counter < 25) or (counter % 500 == 0):
-                    num_critics = 100
-                else:
-                    num_critics = 5
+                    num_critics = 100 if (counter < 25) or (counter % 500 == 0) else 5
+                    batch_start_time = time.time()
 
-                batch_start_time = time.time()
+                    # Update networks
+                    for _ in range(num_critics):
+                        _, d_loss = self.sess.run([self.d_step, self.d_loss],
+                                                  feed_dict_batch)
+                        log_step.write("{}, {:14.6f}\n".format(
+                            self.get_global_step_str(), -d_loss
+                        ))
 
-                # Update networks
-                for _ in range(num_critics):
-                    _, d_loss = self.sess.run([self.d_step, self.d_loss],
-                                              feed_dict_batch)
+                    _, d_loss, g_loss = self.sess.run(
+                        [self.g_step, self.d_loss, self.g_loss], feed_dict_batch
+                    )
                     log_step.write("{}, {:14.6f}\n".format(
                         self.get_global_step_str(), -d_loss
                     ))
 
-                _, d_loss, g_loss = self.sess.run(
-                    [self.g_step, self.d_loss, self.g_loss], feed_dict_batch
-                )
-                log_step.write("{}, {:14.6f}\n".format(
-                    self.get_global_step_str(), -d_loss
-                ))
+                    time_batch = time.time() - batch_start_time
 
-                time_batch = time.time() - batch_start_time
+                    # Print iteration summary
+                    if train_config['verbose']:
+                        if batch < 1:
+                            print("epoch |   batch   |  time  |    - D_loss    |"
+                                  "     G_loss")
+                        print("  {:2d}  | {:4d}/{:4d} | {:6.2f} | {:14.6f} | "
+                              "{:14.6f}".format(epoch, batch, num_batch, time_batch,
+                                                -d_loss, g_loss))
 
-                # Print iteration summary
-                if train_config['verbose']:
-                    if batch < 1:
-                        print("epoch |   batch   |  time  |    - D_loss    |"
-                              "     G_loss")
-                    print("  {:2d}  | {:4d}/{:4d} | {:6.2f} | {:14.6f} | "
-                          "{:14.6f}".format(epoch, batch, num_batch, time_batch,
-                                            -d_loss, g_loss))
+                    log_batch.write("{:d}, {:d}, {:f}, {:f}, {:f}\n".format(
+                        epoch, batch, time_batch, -d_loss, g_loss
+                    ))
 
-                log_batch.write("{:d}, {:d}, {:f}, {:f}, {:f}\n".format(
-                    epoch, batch, time_batch, -d_loss, g_loss
-                ))
-
-                # run sampler
-                if train_config['sample_along_training']:
-                    if counter%100 == 0 or (counter < 300 and counter%20 == 0):
+                                # run sampler
+                    if train_config['sample_along_training'] and (
+                        counter % 100 == 0 or (counter < 300 and counter % 20 == 0)
+                    ):
                         self.run_sampler(self.G.tensor_out, feed_dict_sample,
                                          False)
                         self.run_sampler(self.test_round, feed_dict_sample,
@@ -195,33 +192,34 @@ class GAN(Model):
                                          (counter > 500),
                                          postfix='test_bernoulli')
 
-                # run evaluation
-                if train_config['evaluate_along_training']:
-                    if counter%10 == 0:
+                                # run evaluation
+                    if (
+                        train_config['evaluate_along_training']
+                        and counter % 10 == 0
+                    ):
                         self.run_eval(self.test_round, feed_dict_sample,
                                       postfix='test_round')
                         self.run_eval(self.test_bernoulli, feed_dict_sample,
                                       postfix='test_bernoulli')
 
-                counter += 1
+                    counter += 1
 
-            # print epoch info
-            time_epoch = time.time() - epoch_start_time
+                # print epoch info
+                time_epoch = time.time() - epoch_start_time
 
-            if not train_config['verbose']:
-                if epoch < 1:
-                    print("epoch |   time   |    - D_loss    |     G_loss")
-                print("  {:2d}  | {:8.2f} | {:14.6f} | {:14.6f}".format(
-                    epoch, time_epoch, -d_loss, g_loss))
+                if not train_config['verbose']:
+                    if epoch < 1:
+                        print("epoch |   time   |    - D_loss    |     G_loss")
+                    print("  {:2d}  | {:8.2f} | {:14.6f} | {:14.6f}".format(
+                        epoch, time_epoch, -d_loss, g_loss))
 
-            log_epoch.write("{:d}, {:f}, {:f}, {:f}\n".format(
-                epoch, time_epoch, -d_loss, g_loss
-            ))
+                log_epoch.write("{:d}, {:f}, {:f}, {:f}\n".format(
+                    epoch, time_epoch, -d_loss, g_loss
+                ))
 
-            # save checkpoints
-            self.save()
+                # save checkpoints
+                self.save()
 
-        print('{:=^80}'.format(' Training End '))
-        log_step.close()
+            print('{:=^80}'.format(' Training End '))
         log_batch.close()
         log_epoch.close()

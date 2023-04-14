@@ -64,15 +64,8 @@ def binary_stochastic_ST(x, slope_tensor=None, pass_through=True,
     if slope_tensor is None:
         slope_tensor = tf.constant(1.0)
 
-    if pass_through:
-        p = pass_through_sigmoid(x)
-    else:
-        p = tf.sigmoid(slope_tensor * x)
-
-    if stochastic:
-        return bernoulli_sample(p), p
-    else:
-        return binary_round(p), p
+    p = pass_through_sigmoid(x) if pass_through else tf.sigmoid(slope_tensor * x)
+    return (bernoulli_sample(p), p) if stochastic else (binary_round(p), p)
 
 def binary_stochastic_REINFORCE(x, loss_op_name="loss_by_example"):
     """

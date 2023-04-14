@@ -23,7 +23,7 @@ class Layer(object):
             with tf.variable_scope(name, reuse=reuse) as scope:
                 self.scope = scope
                 if structure[0] not in SUPPORTED_LAYER_TYPES:
-                    raise ValueError("Unknown layer type at " + self.scope.name)
+                    raise ValueError(f"Unknown layer type at {self.scope.name}")
                 self.layer_type = structure[0]
                 self.tensor_out = self.build(structure, condition, slope_tensor)
                 self.vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
@@ -35,9 +35,7 @@ class Layer(object):
             self.vars = []
 
     def __repr__(self):
-        return "Layer({}, type={}, input_shape={}, output_shape={})".format(
-            self.scope.name, self.layer_type, self.tensor_in.get_shape(),
-            self.tensor_out.get_shape())
+        return f"Layer({self.scope.name}, type={self.layer_type}, input_shape={self.tensor_in.get_shape()}, output_shape={self.tensor_out.get_shape()})"
 
     def get_summary(self):
         """Return the summary string."""
@@ -61,9 +59,9 @@ class Layer(object):
         # Reshape layers
         if self.layer_type == 'reshape':
             if np.prod(structure[1]) != np.prod(self.tensor_in.get_shape()[1:]):
-                raise ValueError("Bad reshape size: {} to {} at {}".format(
-                    self.tensor_in.get_shape()[1:], structure[1],
-                    self.scope.name))
+                raise ValueError(
+                    f"Bad reshape size: {self.tensor_in.get_shape()[1:]} to {structure[1]} at {self.scope.name}"
+                )
             if isinstance(structure[1], int):
                 reshape_shape = (-1, structure[1])
             else:
@@ -144,7 +142,7 @@ class Layer(object):
         # normalization layer
         if len(structure) > 2:
             if structure[2] not in (None, 'bn', 'in', 'ln'):
-                raise ValueError("Unknown normalization at " +  self.scope.name)
+                raise ValueError(f"Unknown normalization at {self.scope.name}")
             normalization = structure[2]
         else:
             normalization = None
@@ -165,7 +163,7 @@ class Layer(object):
         if len(structure) > 3:
             if structure[3] not in (None, 'tanh', 'sigmoid', 'relu', 'lrelu',
                                     'bernoulli', 'round'):
-                raise ValueError("Unknown activation at " + self.scope.name)
+                raise ValueError(f"Unknown activation at {self.scope.name}")
             activation = structure[3]
         else:
             activation = None
@@ -214,32 +212,27 @@ class NeuralNet(object):
             self.vars = []
 
     def __repr__(self):
-        return "NeuralNet({}, input_shape={}, output_shape={})".format(
-            self.scope.name, self.tensor_in.get_shape(),
-            self.tensor_out.get_shape())
+        return f"NeuralNet({self.scope.name}, input_shape={self.tensor_in.get_shape()}, output_shape={self.tensor_out.get_shape()})"
 
     def get_summary(self):
         """Return the summary string."""
         return '\n'.join(
-            ['[{}]'.format(self.scope.name),
-             "{:49} {}".format('Input', self.tensor_in.get_shape())]
-            + [x.get_summary() for x in self.layers])
+            (
+                [
+                    f'[{self.scope.name}]',
+                    "{:49} {}".format('Input', self.tensor_in.get_shape()),
+                ]
+                + [x.get_summary() for x in self.layers]
+            )
+        )
 
     def build(self, architecture):
         """Build the neural network."""
         layers = []
         for idx, structure in enumerate(architecture):
-            if idx > 0:
-                prev_layer = layers[idx-1].tensor_out
-            else:
-                prev_layer = self.tensor_in
-
+            prev_layer = layers[idx-1].tensor_out if idx > 0 else self.tensor_in
             # Skip connections
-            if len(structure) > 4:
-                skip_connection = structure[4][0]
-            else:
-                skip_connection = None
-
+            skip_connection = structure[4][0] if len(structure) > 4 else None
             if skip_connection is None:
                 connected = prev_layer
             elif skip_connection == 'add':
@@ -249,7 +242,12 @@ class NeuralNet(object):
                     [prev_layer, layers[structure[4][1]].tensor_out], -1)
 
             # Build layer
-            layers.append(Layer(connected, structure,
-                          slope_tensor=self.slope_tensor,
-                          name='Layer_{}'.format(idx)))
+            layers.append(
+                Layer(
+                    connected,
+                    structure,
+                    slope_tensor=self.slope_tensor,
+                    name=f'Layer_{idx}',
+                )
+            )
         return layers

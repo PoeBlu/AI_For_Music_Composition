@@ -103,9 +103,8 @@ def plot_histogram(hist, fig_dir=None, title=None, max_hist_num=None):
     u_value = np.unique(hist)
 
     hist_num = len(u_value)
-    if max_hist_num is not None:
-        if len(u_value) > max_hist_num:
-            hist_num = max_hist_num
+    if max_hist_num is not None and len(u_value) > max_hist_num:
+        hist_num = max_hist_num
 
     fig = plt.figure()
     plt.hist(hist, hist_num)
@@ -234,7 +233,7 @@ class Metrics(object):
 
         if mat_path is not None:
             if not mat_path.endswith(".npy"):
-                mat_path = mat_path + '.npy'
+                mat_path = f'{mat_path}.npy'
             info_dict = {
                 'score_matrix_mean': score_matrix_mean,
                 'score_pair_matrix_mean': score_pair_matrix_mean}
@@ -253,9 +252,7 @@ def eval_dataset(filepath, result_dir, location, config):
 
     """
     print('[*] Loading dataset...')
-    if location == 'sa':
-        data = sa.attach(filepath)
-    elif location == 'hd':
+    if location in ['sa', 'hd']:
         data = sa.attach(filepath)
     else:
         raise ValueError("Unrecognized value for `location`")

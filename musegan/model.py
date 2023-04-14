@@ -39,30 +39,29 @@ class Model(object):
                 tf.zeros_like(self.D_fake.tensor_out),
                 self.D_fake.tensor_out)
 
-        if (self.config['gan']['type'] == 'wgan'
-                or self.config['gan']['type'] == 'wgan-gp'):
+        if self.config['gan']['type'] in ['wgan', 'wgan-gp']:
             adv_loss_d = (tf.reduce_mean(self.D_fake.tensor_out)
                           - tf.reduce_mean(self.D_real.tensor_out))
             adv_loss_g = -tf.reduce_mean(self.D_fake.tensor_out)
 
-            if self.config['gan']['type'] == 'wgan-gp':
-                eps = tf.random_uniform(
-                    [tf.shape(self.x_)[0], 1, 1, 1, 1], 0.0, 1.0)
-                inter = eps * self.x_ + (1. - eps) * self.G.tensor_out
-                if scope_to_reuse is None:
+        if self.config['gan']['type'] == 'wgan-gp':
+            eps = tf.random_uniform(
+                [tf.shape(self.x_)[0], 1, 1, 1, 1], 0.0, 1.0)
+            inter = eps * self.x_ + (1. - eps) * self.G.tensor_out
+            if scope_to_reuse is None:
+                D_inter = discriminator(inter, self.config, name='D',
+                                        reuse=True)
+            else:
+                with tf.variable_scope(scope_to_reuse, reuse=True):
                     D_inter = discriminator(inter, self.config, name='D',
                                             reuse=True)
-                else:
-                    with tf.variable_scope(scope_to_reuse, reuse=True):
-                        D_inter = discriminator(inter, self.config, name='D',
-                                                reuse=True)
-                gradient = tf.gradients(D_inter.tensor_out, inter)[0]
-                slopes = tf.sqrt(1e-8 + tf.reduce_sum(
-                    tf.square(gradient),
-                    tf.range(1, len(gradient.get_shape()))))
-                gradient_penalty = tf.reduce_mean(tf.square(slopes - 1.0))
-                adv_loss_d += (self.config['gan']['gp_coefficient']
-                               * gradient_penalty)
+            gradient = tf.gradients(D_inter.tensor_out, inter)[0]
+            slopes = tf.sqrt(1e-8 + tf.reduce_sum(
+                tf.square(gradient),
+                tf.range(1, len(gradient.get_shape()))))
+            gradient_penalty = tf.reduce_mean(tf.square(slopes - 1.0))
+            adv_loss_d += (self.config['gan']['gp_coefficient']
+                           * gradient_penalty)
 
         return adv_loss_g, adv_loss_d
 
@@ -92,8 +91,11 @@ class Model(object):
     def get_summary(self):
         """Return model summary."""
         return '\n'.join(
-            ["{:-^80}".format(' < ' + self.scope.name + ' > ')]
-            + [(x.get_summary() + '\n' + '-' * 80) for x in self.components])
+            (
+                ["{:-^80}".format(f' < {self.scope.name} > ')]
+                + [(x.get_summary() + '\n' + '-' * 80) for x in self.components]
+            )
+        )
 
     def get_global_step_str(self):
         """Return the global step as a string."""
@@ -130,8 +132,7 @@ class Model(object):
         """Save the model to a checkpoint file. Default to save to the log
         directory given as a global variable."""
         if filepath is None:
-            filepath = os.path.join(self.config['checkpoint_dir'],
-                                    self.name + '.model')
+            filepath = os.path.join(self.config['checkpoint_dir'], f'{self.name}.model')
         print('[*] Saving checkpoint...')
         self.saver.save(self.sess, filepath, self.global_step)
 
@@ -158,16 +159,15 @@ class Model(object):
         if len(samples) > self.config['num_sample']:
             samples = samples[:self.config['num_sample']]
         if postfix is None:
-            imagepath = os.path.join(self.config['sample_dir'],
-                                     '{}.png'.format(filename))
+            imagepath = os.path.join(self.config['sample_dir'], f'{filename}.png')
         else:
-            imagepath = os.path.join(self.config['sample_dir'],
-                                     '{}_{}.png'.format(filename, postfix))
+            imagepath = os.path.join(
+                self.config['sample_dir'], f'{filename}_{postfix}.png'
+            )
         image_io.save_image(imagepath, samples, shape)
         if save_midi:
             binarized = (samples > 0)
-            midipath = os.path.join(self.config['sample_dir'],
-                                    '{}.mid'.format(filename))
+            midipath = os.path.join(self.config['sample_dir'], f'{filename}.mid')
             midi_io.save_midi(midipath, binarized, self.config)
 
     def run_sampler(self, targets, feed_dict, save_midi=False, postfix=None):
@@ -182,7 +182,7 @@ class Model(object):
         if postfix is None:
             filename = self.get_global_step_str()
         else:
-            filename = self.get_global_step_str() + '_' + postfix
+            filename = f'{self.get_global_step_str()}_{postfix}'
         self.save_samples(filename, samples, save_midi, shape)
 
     def run_eval(self, target, feed_dict, postfix=None):
@@ -192,7 +192,7 @@ class Model(object):
         if postfix is None:
             filename = self.get_global_step_str()
         else:
-            filename = self.get_global_step_str() + '_' + postfix
+            filename = f'{self.get_global_step_str()}_{postfix}'
         reshaped = binarized.reshape((-1,) + binarized.shape[2:])
-        mat_path = os.path.join(self.config['eval_dir'], filename+'.npy')
+        mat_path = os.path.join(self.config['eval_dir'], f'{filename}.npy')
         _ = self.metrics.eval(reshaped, mat_path=mat_path)

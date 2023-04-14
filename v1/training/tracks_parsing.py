@@ -32,10 +32,21 @@ def csc_to_array(csc):
     return scipy.sparse.csc_matrix((csc['data'], csc['indices'], csc['indptr']), shape= csc['shape']).toarray()
 
 def get_instruments_dict_path(msd_id):
-    return os.path.join(DATA_SET_ROOT, 'lmd_{}'.format(KIND), msd_id_to_dirs(msd_id), 'instruments.json')
+    return os.path.join(
+        DATA_SET_ROOT,
+        f'lmd_{KIND}',
+        msd_id_to_dirs(msd_id),
+        'instruments.json',
+    )
 
 def get_instruments_path(msd_id, midi_md5, instrument_name):
-    return os.path.join(DATA_SET_ROOT, 'lmd_{}'.format(KIND), msd_id_to_dirs(msd_id), midi_md5, instrument_name + '.npz')
+    return os.path.join(
+        DATA_SET_ROOT,
+        f'lmd_{KIND}',
+        msd_id_to_dirs(msd_id),
+        midi_md5,
+        f'{instrument_name}.npz',
+    )
 
 def my_filter_drop(midi_dict, msd_id, midi_md5):
     # return False for unwanted midi files and True for collected midi files
@@ -61,31 +72,35 @@ def get_bar_piano_roll(msd_id, midi_md5, instrument_name):
     return piano_roll
 
 def save_flat_piano_roll(piano_roll, postfix):
-    filepath = os.path.join(RESULT_PATH, postfix, msd_id + '.'+ FILETYPE)
+    filepath = os.path.join(RESULT_PATH, postfix, f'{msd_id}.{FILETYPE}')
     if FILETYPE == 'npz':  # compressed scipy sparse matrix
         piano_roll = piano_roll.reshape(-1,128)
         sparse_train_data = scipy.sparse.csc_matrix(piano_roll)
         scipy.sparse.save_npz(filepath, sparse_train_data)
+    elif MODE == '2D':
+        piano_roll = piano_roll.reshape(-1,128)
+    elif MODE == '3D':
+        if FILETYPE == 'csv':
+            np.savetxt(filepath, piano_roll, delimiter=',')
+        elif FILETYPE == 'npy':  # uncompressed numpy matrix
+            np.save(filepath, piano_roll)
     else:
-        if MODE == '2D':
-            piano_roll = piano_roll.reshape(-1,128)
-        elif MODE == '3D':
-            if FILETYPE == 'csv':
-                np.savetxt(filepath, piano_roll, delimiter=',')
-            elif FILETYPE == 'npy':  # uncompressed numpy matrix
-                np.save(filepath, piano_roll)
-        else:
-            print( 'Error: Unknown file saving setting')
+        print( 'Error: Unknown file saving setting')
 
 if __name__ == "__main__":
     with open(MIDI_DICT_PATH) as f:
             midi_dict = json.load(f)
-            
+
     subset_id_list = []
     with open(SUBSET_LIST) as file:
         for line in file:
-            for word in line.replace("[","").replace("]","").replace(",","").split():
-                subset_id_list.append(word.strip('"'))
+            subset_id_list.extend(
+                word.strip('"')
+                for word in line.replace("[", "")
+                .replace("]", "")
+                .replace(",", "")
+                .split()
+            )
     print(len(subset_id_list )) # 6646 songs in rock_C_id
 
 
@@ -116,8 +131,8 @@ if __name__ == "__main__":
                 instrument_dict = json.load(f)
 
             ## check instrument error
-            instrus_act = list(set([key.split('_')[0] for key in instrument_dict.keys()]))
-         
+            instrus_act = list({key.split('_')[0] for key in instrument_dict.keys()})
+
             for p in range(5):
                 if(prefix[p]) in instrus_act:
                     flag_act[p] = 1
@@ -133,9 +148,9 @@ if __name__ == "__main__":
             # Compress each of (Bass, Drum, Guitar, Piano) to 1
             # Compress all of Others (include string) to 1
 
-            instrus = [key for key in instrument_dict.keys()]
+            instrus = list(instrument_dict.keys())
             type_list = [[],[],[],[],[]]
-           
+
             for i in instrus:
                 info = i.split('_')
                 try:
@@ -145,8 +160,8 @@ if __name__ == "__main__":
                     print(info[0])
                     prefix_idx = prefix.index('Other')
                     type_list[prefix_idx].append(i)
-                
-               
+
+
 
             bar_remplate = get_bar_piano_roll(msd_id, midi_md5, type_list[0][0]).astype(float)
 
@@ -161,6 +176,6 @@ if __name__ == "__main__":
                 # plt.title(prefix[idx])
                 # print(piano_roll.shape) # (nbar, 96, 128)
                 save_flat_piano_roll(piano_roll, prefix[idx])
-            
+
             counter += 1
             print('%d/%d' %( counter, song_idx), 'OK!', instrus_act)

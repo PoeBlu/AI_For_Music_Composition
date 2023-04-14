@@ -1,12 +1,13 @@
 """Network architecture for the generator of the hybrid model.
 """
-NET_G = {}
 
-# Input latent sizes (NOTE: use 0 instead of None)
-NET_G['z_dim_shared'] = 32
-NET_G['z_dim_private'] = 32
-NET_G['z_dim_temporal_shared'] = 32
-NET_G['z_dim_temporal_private'] = 32
+NET_G = {
+    'z_dim_shared': 32,
+    'z_dim_private': 32,
+    'z_dim_temporal_shared': 32,
+    'z_dim_temporal_private': 32,
+}
+
 NET_G['z_dim'] = (NET_G['z_dim_shared'] + NET_G['z_dim_private']
                   + NET_G['z_dim_temporal_shared']
                   + NET_G['z_dim_temporal_private'])

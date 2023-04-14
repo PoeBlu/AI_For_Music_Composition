@@ -1,12 +1,13 @@
 """Network architecture for the generator of the composer model.
 """
-NET_G = {}
 
-# Input latent sizes (NOTE: use 0 instead of None)
-NET_G['z_dim_shared'] = 64
-NET_G['z_dim_private'] = 0
-NET_G['z_dim_temporal_shared'] = 64
-NET_G['z_dim_temporal_private'] = 0
+NET_G = {
+    'z_dim_shared': 64,
+    'z_dim_private': 0,
+    'z_dim_temporal_shared': 64,
+    'z_dim_temporal_private': 0,
+}
+
 NET_G['z_dim'] = (NET_G['z_dim_shared'] + NET_G['z_dim_private']
                   + NET_G['z_dim_temporal_shared']
                   + NET_G['z_dim_temporal_private'])

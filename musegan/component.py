@@ -34,31 +34,35 @@ class Component(object):
         if isinstance(self.tensor_in, tf.Tensor):
             input_shape = self.tensor_in.get_shape()
         else:
-            input_shape = ', '.join([
-                '{}: {}'.format(key, self.tensor_in[key].get_shape())
-                for key in self.tensor_in])
-        return "Component({}, input_shape={}, output_shape={})".format(
-            self.scope.name, input_shape, str(self.tensor_out.get_shape()))
+            input_shape = ', '.join(
+                [
+                    f'{key}: {self.tensor_in[key].get_shape()}'
+                    for key in self.tensor_in
+                ]
+            )
+        return f"Component({self.scope.name}, input_shape={input_shape}, output_shape={str(self.tensor_out.get_shape())})"
 
     def get_summary(self):
         """Return the summary string."""
         cleansed_nets = []
         for net in self.nets.values():
-            if isinstance(net, NeuralNet):
-                if net.scope is not None:
-                    cleansed_nets.append(net)
-            if isinstance(net, list):
-                if net[0].scope is not None:
-                    cleansed_nets.append(net[0])
+            if isinstance(net, NeuralNet) and net.scope is not None:
+                cleansed_nets.append(net)
+            if isinstance(net, list) and net[0].scope is not None:
+                cleansed_nets.append(net[0])
 
         if isinstance(self.tensor_in, tf.Tensor):
             input_strs = ["{:50}{}".format('Input', self.tensor_in.get_shape())]
         else:
-            input_strs = ["{:50}{}".format('Input - ' + key,
-                                           self.tensor_in[key].get_shape())
-                          for key in self.tensor_in]
+            input_strs = [
+                "{:50}{}".format(f'Input - {key}', self.tensor_in[key].get_shape())
+                for key in self.tensor_in
+            ]
 
         return '\n'.join(
-            ["{:-^80}".format(' ' + self.scope.name + ' ')] + input_strs
-            + ['-' * 80 + '\n' + x.get_summary() for x in cleansed_nets]
+            (
+                ["{:-^80}".format(f' {self.scope.name} ')]
+                + input_strs
+                + ['-' * 80 + '\n' + x.get_summary() for x in cleansed_nets]
+            )
         )

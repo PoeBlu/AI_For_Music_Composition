@@ -69,7 +69,6 @@ class Generator(Component):
 
             tensor_out = nets['bar_merged'].tensor_out
 
-        # Private bar generator mode
         elif config['net_g']['bar_generator_type'] == 'private':
             # Tile private latent vector along time axis
             if 'private' in self.tensor_in:
@@ -84,9 +83,11 @@ class Generator(Component):
             # Define private temporal generator
             if 'temporal_private' in self.tensor_in:
                 nets['temporal_private'] = [
-                    NeuralNet(self.tensor_in['temporal_private'][..., idx],
-                              config['net_g']['temporal_private'],
-                              name='temporal_private_'+str(idx))
+                    NeuralNet(
+                        self.tensor_in['temporal_private'][..., idx],
+                        config['net_g']['temporal_private'],
+                        name=f'temporal_private_{str(idx)}',
+                    )
                     for idx in range(config['num_track'])
                 ]
 
@@ -106,30 +107,43 @@ class Generator(Component):
 
             # Bar generators
             nets['bar_main'] = [
-                NeuralNet(z_input[idx], config['net_g']['bar_main'],
-                          name='bar_main_'+str(idx))
+                NeuralNet(
+                    z_input[idx],
+                    config['net_g']['bar_main'],
+                    name=f'bar_main_{str(idx)}',
+                )
                 for idx in range(config['num_track'])
             ]
 
             nets['bar_pitch_time'] = [
-                NeuralNet(nets['bar_main'][idx].tensor_out,
-                          config['net_g']['bar_pitch_time'],
-                          name='bar_pitch_time_'+str(idx))
+                NeuralNet(
+                    nets['bar_main'][idx].tensor_out,
+                    config['net_g']['bar_pitch_time'],
+                    name=f'bar_pitch_time_{str(idx)}',
+                )
                 for idx in range(config['num_track'])
             ]
 
             nets['bar_time_pitch'] = [
-                NeuralNet(nets['bar_main'][idx].tensor_out,
-                          config['net_g']['bar_time_pitch'],
-                          name='bar_time_pitch_'+str(idx))
+                NeuralNet(
+                    nets['bar_main'][idx].tensor_out,
+                    config['net_g']['bar_time_pitch'],
+                    name=f'bar_time_pitch_{str(idx)}',
+                )
                 for idx in range(config['num_track'])
             ]
 
             nets['bar_merged'] = [
                 NeuralNet(
-                    tf.concat([nets['bar_pitch_time'][idx].tensor_out,
-                               nets['bar_time_pitch'][idx].tensor_out], -1),
-                    config['net_g']['bar_merged'], name='bar_merged_'+str(idx)
+                    tf.concat(
+                        [
+                            nets['bar_pitch_time'][idx].tensor_out,
+                            nets['bar_time_pitch'][idx].tensor_out,
+                        ],
+                        -1,
+                    ),
+                    config['net_g']['bar_merged'],
+                    name=f'bar_merged_{str(idx)}',
                 )
                 for idx in range(config['num_track'])
             ]
@@ -156,24 +170,31 @@ class Discriminator(Component):
 
         # Main stream
         nets['pitch_time_private'] = [
-            NeuralNet(tf.expand_dims(self.tensor_in[..., idx], -1),
-                      config['net_d']['pitch_time_private'],
-                      name='pt_' + str(idx))
+            NeuralNet(
+                tf.expand_dims(self.tensor_in[..., idx], -1),
+                config['net_d']['pitch_time_private'],
+                name=f'pt_{str(idx)}',
+            )
             for idx in range(config['num_track'])
         ]
 
         nets['time_pitch_private'] = [
-            NeuralNet(tf.expand_dims(self.tensor_in[..., idx], -1),
-                      config['net_d']['time_pitch_private'],
-                      name='tp_' + str(idx))
+            NeuralNet(
+                tf.expand_dims(self.tensor_in[..., idx], -1),
+                config['net_d']['time_pitch_private'],
+                name=f'tp_{str(idx)}',
+            )
             for idx in range(config['num_track'])
         ]
 
         nets['merged_private'] = [
             NeuralNet(
-                tf.concat([x.tensor_out,
-                           nets['time_pitch_private'][idx].tensor_out], -1),
-                config['net_d']['merged_private'], name='merged_' + str(idx))
+                tf.concat(
+                    [x.tensor_out, nets['time_pitch_private'][idx].tensor_out], -1
+                ),
+                config['net_d']['merged_private'],
+                name=f'merged_{str(idx)}',
+            )
             for idx, x in enumerate(nets['pitch_time_private'])
         ]
 
